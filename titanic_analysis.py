@@ -168,26 +168,9 @@ class Passenger:
         self.is_alone = bool(is_alone) if pd.notna(is_alone) else None
         self.title = str(title) if pd.notna(title) else "Unknown"
         
-    
     def to_dict(self):
         """Convert passenger to dictionary for JSON serialization."""
-        return {
-            'passenger_id': self.passenger_id,
-            'name': self.name,
-            'age': self.age,
-            'sex': self.sex,
-            'survived': self.survived,
-            'pclass': self.pclass,
-            'fare': self.fare,
-            'embarked': self.embarked,
-            'family_size': self.family_size,
-            'is_alone': self.is_alone,
-            'title': self.title
-        }   
-
-    # def to_dict(self):
-    #     """Convert passenger to dictionary for JSON serialization."""
-    #     return self.__dict__  # This will automatically convert all attributes to a dictionary
+        return self.__dict__  # This will automatically convert all attributes to a dictionary
     
 class TitanicDataset:
     """Represents the entire Titanic dataset with methods for JSON export."""
@@ -265,4 +248,4 @@ if 'df_features' in locals() and not df_features.empty:
         print(f"{key.replace('_',' ').title()}: {value}")     
     
     dataset.to_json('titanic_data.json')
-        
+
