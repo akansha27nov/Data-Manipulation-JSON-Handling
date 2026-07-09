@@ -1,6 +1,6 @@
 """
 Titanic Data Analysis and JSON Export
-Author: [Your Name]
+Author: 
 Description: Analyze Titanic passenger data, engineer features, and export to JSON
 """
  
@@ -62,11 +62,16 @@ for col in df.columns:
     }
     print(f"{col} - Missing Count: {missing_count}, Missing Percentage: {missing_percentage:.2f}%")
  
-print(missing_values)
+print("Missing values dictionary:", missing_values)
 # Identify which columns have the most missing data
-column_with_most_missing = max(missing_values, key=lambda x: missing_values[x]["count"])
-# column_with_most_missing = max(missing_values.values())
+# using lambda to get the key with the maximum count of missing values since 
+# it is a dictionary of dictionaries, we need to access the "count" key for  each column to find the maximum.
+column_with_most_missing = max(missing_values, key=lambda x: missing_values[x]["count"]) 
 print("Column with the most missing values:", column_with_most_missing)
+
+# using pandas built-in functions to find the column with the most missing values
+column_with_most_missing_value = df.isnull().sum().idxmax()
+print("Column with the most missing values:", column_with_most_missing_value)
 
 # ======================================================
 # Step 5: Feature Engineering
@@ -76,3 +81,105 @@ df_features = df.copy()
 # Feature 1: Family Size
 df_features['FamilySize'] = df_features['SibSp'] + df_features['Parch'] + 1
 print(df_features[['SibSp', 'Parch', 'FamilySize']].head(10))
+
+# Feature 2: Is Alone
+df_features['IsAlone'] = (df_features['FamilySize'] == 1) # using astype(int) to convert boolean to integer (1 for True, 0 for False)
+print("First 10 rows with family size and alone status: ")
+print(df_features[['FamilySize', 'IsAlone']].head(10))
+
+# Feature 3: Age Groups
+
+custom_bins = [0, 18, 30, 50, 80]
+custom_labels = ['Child', 'Teenager', 'Adult', 'Senior'] # label should be len(bins) - 1
+df_features['AgeGroup'] = pd.cut(df_features['Age'], bins=custom_bins, labels=custom_labels)
+
+# Add 'Unknown' category for NaN values in AgeGroup
+df_features['AgeGroup'] = df_features['AgeGroup'].cat.add_categories('Unknown').fillna('Unknown')
+
+print("Age groups assigned:")
+print(df_features[['Age', 'AgeGroup']].head(10)) # this still returns NaN for Age column, but AgeGroup will have 'Unknown' for those rows
+
+# Analyze feature differences between survivors and non-survivors
+print("\n" + "="*50)
+print("FEATURE ANALYSIS: SURVIVED vs NOT SURVIVED")
+print("="*50)
+
+print("\nFamily Size by Survival:")
+family_survival = df_features.groupby('Survived')['FamilySize'].agg(['mean', 'median', 'std'])
+print(family_survival)
+
+# Analyze Survival rate by IsAlone
+print("Survival rate by IsAlone:")
+alone_survival = df_features.groupby('IsAlone')['Survived'].agg(['mean', 'median', 'std'])
+print(alone_survival)
+
+# Analyze Survival rate by AgeGroup
+print("Survival rate by AgeGroup:")
+agegroup_survival = df_features.groupby('AgeGroup')['Survived'].agg(['mean', 'median', 'std'])
+print(agegroup_survival)
+
+# Statistical test: Do these features help differentiate?
+print("\n" + "="*50)
+print("FEATURE DIFFERENTIATION ANALYSIS")
+print("="*50)
+ 
+survived = df_features[df_features['Survived'] == 1]
+not_survived = df_features[df_features['Survived'] == 0]
+ 
+print("\nFamily Size:")
+print(f"  Survived mean: {survived['FamilySize'].mean():.2f}")
+print(f"  Not Survived mean: {not_survived['FamilySize'].mean():.2f}")
+print(f"  Difference: {abs(survived['FamilySize'].mean() - not_survived['FamilySize'].mean()):.2f}")
+
+print("\nIs Alone:")
+print(f"  Survived mean: {survived['IsAlone'].mean():.2f}")
+print(f"  Not Survived mean: {not_survived['IsAlone'].mean():.2f}")
+print(f"  Difference: {abs(survived['IsAlone'].mean() - not_survived['IsAlone'].mean()):.2f}")
+
+print("\nAge Group:")
+survival_by_agegroup = df_features.groupby('AgeGroup', observed=True)['Survived'].mean()
+print(survival_by_agegroup)
+
+print("Interpretation of results: ")
+print("  - Family Size: is not the most most powerful indicator of survival. The difference is very small (0.06)")
+print("  - Is Alone: Those who were not alone had a higher survival rate.")
+print("  - Age Group: children had the highest survival rates then adults. Teenagers, Seniors, and Unknown had lower survival rates. This suggests that age played a significant role in survival, with children being prioritized for rescue.")
+
+# ======================================================
+# Step 6: Creating a Data Export Class
+# ======================================================
+# Create a Python class to structure and export data to JSON format.
+
+class Passenger:
+    def __init__(self, passenger_id, name, age, sex, survived, pclass, 
+                 fare, embarked=None, family_size=None, is_alone=None, title=None):
+        # Tip: Use pd.notna() to check if a value is not null/NaN
+        # Tip: Convert to appropriate types (int, float, str)
+        self.passenger_id = int(passenger_id) if pd.notna(passenger_id) else None
+        self.name = str(name) if pd.notna(name) else "Unknown"
+        self.age = float(age) if pd.notna(age) else None
+        self.sex = str(sex) if pd.notna(sex) else "Unknown"
+        self.survived = int(survived) if pd.notna(survived) else None
+        self.pclass = int(pclass) if pd.notna(pclass) else None
+        self.fare = float(fare) if pd.notna(fare) else 0.0
+        self.embarked = str(embarked) if pd.notna(embarked) else None
+        self.family_size = int(family_size) if pd.notna(family_size) else None
+        self.is_alone = bool(is_alone) if pd.notna(is_alone) else None
+        self.title = str(title) if pd.notna(title) else "Unknown"
+        
+    
+    def to_dict(self):
+        """Convert passenger to dictionary for JSON serialization."""
+        return {
+            'passenger_id': self.passenger_id,
+            'name': self.name,
+            'age': self.age,
+            'sex': self.sex,
+            'survived': self.survived,
+            'pclass': self.pclass,
+            'fare': self.fare,
+            'embarked': self.embarked,
+            'family_size': self.family_size,
+            'is_alone': self.is_alone,
+            'title': self.title
+        }   
