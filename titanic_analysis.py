@@ -200,13 +200,15 @@ class TitanicDataset:
     
     def to_json(self, filename='titanic_data.json'):
         """Export dataset to JSON file."""
+        stats = self.get_summary_stats()
         # create a dictionary with metadata and passenger data
         data = {
             'metadata': {
                 'dataset_name': 'Titanic Passenger Dataset',
                 'export_date': datetime.now().isoformat(),
                 'total_passengers': len(self.passengers),
-                'survival_rate': float(self.dataframe['Survived'].mean()) # convert to float for JSON serialization
+                'survival_rate': float(self.dataframe['Survived'].mean()), # convert to float for JSON serialization
+                'summary_statistics': stats # now it can be used in validation
             },
             'passengers': [p.to_dict() for p in self.passengers]
         }
@@ -226,12 +228,20 @@ class TitanicDataset:
         average_age = float(np.mean([p.age for p in self.passengers if p.age is not None])) # use float() to ensure JSON serializable
         average_fare = float(np.mean([p.fare for p in self.passengers if p.fare is not None]))
         
+        # check for missing age and fare
+        missing_age = sum(1 for p in self.passengers if p.age is None)
+        missing_fare = sum(1 for p in self.passengers if p.fare is None)
+        
         return {
             'total_passengers': total_passengers,
             'survived': survived_count,
             'did_not_survive': did_not_survive_count,
-            'average_age': average_age,
-            'average_fare': average_fare
+            'average_age': round(average_age, 2),
+            'average_fare': round(average_fare, 2),
+            'missing_values': {
+                'age': missing_age,
+                'fare': missing_fare
+            }
         }
         
 # Create dataset object and export
@@ -249,3 +259,52 @@ if 'df_features' in locals() and not df_features.empty:
     
     dataset.to_json('titanic_data.json')
 
+# ======================================================
+# Step 7: Testing and Validation
+# ======================================================
+# Verify that your JSON export is correct and complete.
+
+print("\n" + "="*50)
+print("RUNNING VALIDATION")
+print("="*50)
+
+JSON_FILE = 'titanic_data.json'
+
+# load JSON file
+with open(JSON_FILE , 'r', encoding='UTF-8') as f:
+    json_data_from_file = json.load(f)
+
+print("**** JSON successfully loaded *****")
+
+# check it contains all expected keys
+expected_keys = ['metadata', 'passengers']
+
+missing_key_in_data = [key for key in expected_keys if key not in json_data_from_file]
+
+if not missing_key_in_data:
+    print("Expected keys are found in JSON file")
+else:
+    print("Missing keys in JSON file:", missing_key_in_data)
+
+# check the json file has the correct number of passenger records
+total_passenger_count = len(json_data_from_file['passengers'])
+print(f"Total passenger count: {total_passenger_count}")
+
+# Includes all statistics and missing value information
+if total_passenger_count > 0 :
+    sample_data_from_json = json_data_from_file['passengers'][0] # getting first record
+    print(f"Sample passenger data with ID: {sample_data_from_json.get('passenger_id')}")
+    print("JSON is valid.")
+else:
+    print('No passenger data found!')
+
+if 'summary_statistics' in json_data_from_file['metadata']:
+    stats = json_data_from_file['metadata']['summary_statistics']
+    print(f"Summary stats found: {list(stats.keys())}")
+    print(f"Missing age count: {stats['missing_values']['age']}")
+else:
+    print("Summary statistics missing!")
+
+print("\n" + "="*50)
+print("VALIDATION COMPLETE")
+print("="*50)

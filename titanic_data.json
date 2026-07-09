@@ -1,9 +1,20 @@
 {
   "metadata": {
     "dataset_name": "Titanic Passenger Dataset",
-    "export_date": "2026-07-09T16:28:33.334583",
+    "export_date": "2026-07-09T17:06:29.757048",
     "total_passengers": 891,
-    "survival_rate": 0.3838383838383838
+    "survival_rate": 0.3838383838383838,
+    "summary_statistics": {
+      "total_passengers": 891,
+      "survived": 342,
+      "did_not_survive": 549,
+      "average_age": 29.7,
+      "average_fare": 32.2,
+      "missing_values": {
+        "age": 177,
+        "fare": 0
+      }
+    }
   },
   "passengers": [
     {
