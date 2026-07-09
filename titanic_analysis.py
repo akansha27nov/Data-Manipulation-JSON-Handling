@@ -153,8 +153,6 @@ print("  - Age Group: children had the highest survival rates then adults. Teena
 class Passenger:
     def __init__(self, passenger_id, name, age, sex, survived, pclass, 
                  fare, embarked=None, family_size=None, is_alone=None, title=None):
-        # Tip: Use pd.notna() to check if a value is not null/NaN
-        # Tip: Convert to appropriate types (int, float, str)
         self.passenger_id = int(passenger_id) if pd.notna(passenger_id) else None
         self.name = str(name) if pd.notna(name) else "Unknown"
         self.age = float(age) if pd.notna(age) else None
