@@ -1,10 +1,9 @@
 """
 Titanic Data Analysis and JSON Export
-Author: 
+Author: Akansha Verma
 Description: Analyze Titanic passenger data, engineer features, and export to JSON
 """
  
-from nbformat import write
 import pandas as pd
 import numpy as np
 import json
