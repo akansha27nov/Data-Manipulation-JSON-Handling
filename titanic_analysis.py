@@ -4,6 +4,7 @@ Author:
 Description: Analyze Titanic passenger data, engineer features, and export to JSON
 """
  
+from nbformat import write
 import pandas as pd
 import numpy as np
 import json
@@ -183,3 +184,85 @@ class Passenger:
             'is_alone': self.is_alone,
             'title': self.title
         }   
+
+    # def to_dict(self):
+    #     """Convert passenger to dictionary for JSON serialization."""
+    #     return self.__dict__  # This will automatically convert all attributes to a dictionary
+    
+class TitanicDataset:
+    """Represents the entire Titanic dataset with methods for JSON export."""
+    def __init__(self, dataframe):
+        self.dataframe = dataframe
+        self.passengers = []  # Will store Passenger objects
+        self._create_passengers()
+    
+    def _create_passengers(self):
+        """Create Passenger objects from dataframe."""
+        # Tip: Use row.get('ColumnName', default_value) to safely get values
+        for _, row in self.dataframe.iterrows():
+            passenger = Passenger(
+                passenger_id=row.get('PassengerId'),
+                name=row.get('Name'),
+                age=row.get('Age'),
+                sex=row.get('Sex'),
+                survived=row.get('Survived'),
+                pclass=row.get('Pclass'),
+                fare=row.get('Fare'),
+                embarked=row.get('Embarked'),
+                family_size=row.get('FamilySize'),
+                is_alone=row.get('IsAlone'),
+                title=row.get('Title')
+            )
+            self.passengers.append(passenger)
+    
+    def to_json(self, filename='titanic_data.json'):
+        """Export dataset to JSON file."""
+        # create a dictionary with metadata and passenger data
+        data = {
+            'metadata': {
+                'dataset_name': 'Titanic Passenger Dataset',
+                'export_date': datetime.now().isoformat(),
+                'total_passengers': len(self.passengers),
+                'survival_rate': float(self.dataframe['Survived'].mean()) # convert to float for JSON serialization
+            },
+            'passengers': [p.to_dict() for p in self.passengers]
+        }
+        # write to JSON file with indentation for readability
+        with open(filename, 'w') as f:
+            json.dump(data, f, indent=2)
+        
+        print(f"Data exported to {filename}")
+        return data
+    
+    def get_summary_stats(self):
+        """Get summary statistics."""
+        # Calculate and return summary statistics
+        survived_count = sum(1 for p in self.passengers if p.survived == 1)
+        did_not_survive_count = sum(1 for p in self.passengers if p.survived == 0)
+        total_passengers = len(self.passengers)
+        average_age = float(np.mean([p.age for p in self.passengers if p.age is not None])) # use float() to ensure JSON serializable
+        average_fare = float(np.mean([p.fare for p in self.passengers if p.fare is not None]))
+        
+        return {
+            'total_passengers': total_passengers,
+            'survived': survived_count,
+            'did_not_survive': did_not_survive_count,
+            'average_age': average_age,
+            'average_fare': average_fare
+        }
+        
+# Create dataset object and export
+# Check if df_features exists and is not empty
+if 'df_features' in locals() and not df_features.empty:
+    # Create a TitanicDataset object
+    dataset = TitanicDataset(df_features)
+    # Print basic information about the dataset
+    print(f"The dataset contains: {len(dataset.passengers)} passengers")
+    
+    stats = dataset.get_summary_stats()
+    print("********* Summary Statistics ************")
+    for key, value in stats.items():
+        print(f"{key.replace('_',' ').title()}: {value}")     
+    
+    dataset.to_json('titanic_data.json')
+        
